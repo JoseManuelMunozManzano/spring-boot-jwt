@@ -1,0 +1,34 @@
+@startuml
+
+class Cliente {
+    -id : Integer
+    -nombre: String
+    -apellido : String
+    -email : String
+    -createAt : Date
+    -facturas: List<Factura>
+}
+
+class Factura {
+    -folio : Integer
+    -descripcion : String
+    -observacion : String
+    -fecha : Date
+    +calcularTotal() : Long
+}
+
+class LineaFactura{
+    -cantidad : Integer
+    +calcularImporte() : Long
+}
+
+class Producto{
+    -nombre : String
+    -precio : Long
+}
+
+Cliente o-- Factura
+Factura *-- LineaFactura
+LineaFactura --> Producto
+
+@enduml
