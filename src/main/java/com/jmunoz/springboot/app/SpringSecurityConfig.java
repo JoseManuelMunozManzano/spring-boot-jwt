@@ -34,7 +34,20 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests().antMatchers("/", "/css/**", "/js/**", "/images/**", "/listar**", "/locale", "/api/clientes/**").permitAll()
+        // Quitamos el acceso a /api/clientes porque le vamos a dar seguridad.
+        //
+        // Para ver sus datos, volver a ponerlo y, en Postman, hacer una petición GET a
+        // http://localhost:8080/api/clientes/listar
+        //
+        // Pero si lo quitamos, si vamos a Postman y ejecutamos ese GET, como ahora tiene seguridad, redirige a Login
+        // y veremos el código HTML de la vista Login
+        //
+        // Pera esa no es la idea, ya que queremos que nos muestre el código 401 Not Authorized o 403 Forbidden.
+        // Es por esto que hay incompatibilidad entre seguridad normal con sesiones con formulario Login y
+        // seguridad basada en token. No se ajusta bien a una o a otra.
+        // Lo idea es tener completamente separado nuestra aplicación para Rest de la parte Web.
+        // Pero se puede mezclar, lo que pasa es que no se recomienda.
+        http.authorizeRequests().antMatchers("/", "/css/**", "/js/**", "/images/**", "/listar**", "/locale").permitAll()
                 .anyRequest().authenticated()
                 .and()
                     .formLogin()
