@@ -1,5 +1,6 @@
 package com.jmunoz.springboot.app;
 
+import com.jmunoz.springboot.app.auth.filter.JWTAuthenticationFilter;
 import com.jmunoz.springboot.app.auth.handler.LoginSuccessHandler;
 import com.jmunoz.springboot.app.models.service.JpaUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,11 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers("/", "/css/**", "/js/**", "/images/**", "/listar/**", "/locale").permitAll()
                 .anyRequest().authenticated()
                 .and()
+                // Registramos el filtro de autenticación y tenemos que pasarle el AuthenticationManager.
+                // Como SpringSecurityConfig está heredando de WebSecurityConfigurerAdapter, si revisamos la clase
+                // abstracta, vemos que existe un método que nos permite obtener el AuthenticationManager y que se
+                // llama authenticationManager()
+                .addFilter(new JWTAuthenticationFilter(authenticationManager()))
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
