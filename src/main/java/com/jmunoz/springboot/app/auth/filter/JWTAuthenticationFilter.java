@@ -47,12 +47,10 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String username = this.obtainUsername(request);
         String password = this.obtainPassword(request);
 
-        // Como estamos enviando datos raw en vez de un form-data estos datos son null, entran por el else
         if (username != null && password != null) {
             logger.info("Username desde request parameter (form-data): " + username);
             logger.info("Password desde request parameter (form-data): " + password);
         } else {
-            // Tenemos que convertir los datos JSON a un objeto Usuario
             Usuario user = null;
             try {
                 user = new ObjectMapper().readValue(request.getInputStream(), Usuario.class);
@@ -70,18 +68,6 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);
 
-        // Se devuelve la autenticación
-        // Implementamos la segunda forma de enviar parámetros a nuestra API Rest, enviando los datos en bruto (raw)
-        // Se usa mucho para integrar frontend con backend
-        // Para probar esto en Postman:
-        // POST
-        // http://localhost:8080/api/login
-        // Forma 2: Seleccionar raw y JSON
-        //   Mandar un JSON con el usuario y la contraseña de esta forma:
-        // {
-        //    "username": "jmunoz",
-        //    "password": 1234
-        // }
         return authenticationManager.authenticate(authToken);
     }
 
@@ -112,9 +98,23 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         body.put("mensaje", String.format("Hola %s, has iniciado sesión con éxito!", username));
 
         response.getWriter().write(new ObjectMapper().writeValueAsString(body));
-
         response.setStatus(200);
+        response.setContentType("application/json");
+    }
 
+    // Método que se encarga de implementar la falla del método login
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                              AuthenticationException failed) throws IOException, ServletException {
+
+        Map<String, Object> body = new HashMap<>();
+        // Es importante por temas de seguridad NO especificar cuál de los dos, username o password, es el incorrecto
+        body.put("mensaje", "Error de autenticación: username o password incorrecto!");
+        // El mensaje original que ha ocurrido
+        body.put("error", failed.getMessage());
+
+        response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+        response.setStatus(401);
         response.setContentType("application/json");
     }
 }
