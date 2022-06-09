@@ -14,12 +14,13 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.Key;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,7 +31,9 @@ import java.util.Map;
 
 public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    public static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    // Forma de implementar nuestra propia llave secreta en vez de utilizar la por defecto
+    // Ojo, tiene que ser como mínimo de 256 bits de larga
+    public static final SecretKey SECRET_KEY = new SecretKeySpec("algunaLlaveSecretaTienequeser256bitslong".getBytes(), SignatureAlgorithm.HS512.getJcaName());
 
     private AuthenticationManager authenticationManager;
 
