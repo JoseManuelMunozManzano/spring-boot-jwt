@@ -1,6 +1,7 @@
 package com.jmunoz.springboot.app.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -8,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -18,6 +20,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Key;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,10 +53,6 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             logger.info("Password desde request parameter (form-data): " + password);
         }
 
-        // Dejar claro que este no es el JSON Web Token
-        // Este token se maneja de forma interna en nuestra aplicación con Spring Security y a partir de el
-        // objeto Authentication se puede obtener el username y todos los datos necesarios para crear el
-        // JSON Web Token
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);
 
         // Se devuelve la autenticación
@@ -72,48 +72,46 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         return authenticationManager.authenticate(authToken);
     }
 
-    // Aquí vemos el objeto Authentication authResult que es el mismo que tenemos arriba, con la diferencia
-    // de que aquí ya está autenticado (atributo authenticated en true) y con los datos del usuario, username,
-    // sus roles.
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
 
-        // Empezamos a crear el JSON Web Token que tenemos que retornar al cliente. Por ahora sencillo.
-        // Falta agregar roles y la fecha de expiración
-        //
-        // Hay varias formas de obtener el nombre del usuario:
-        // authResult.getName()
-        // ((User) authResult.getPrincipal()).getUsername()
+        // Empezamos a crear el JSON Web Token que tenemos que retornar al cliente.
         String username = ((User) authResult.getPrincipal()).getUsername();
 
+        // Obteniendo los roles
+        // El tipo se ha obtenido haciendo Cmd+Click en getAuthorities()
+        Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
+
+        // Se va a colocar más información en el token, en concreto la fecha de creación, de expiración y los roles.
+        //
+        // Como no hay un setRoles() ni nada parecido, los roles se añaden como datos extra, llamados Claims.
+        // Lo ideal es que roles se guarden como String. En este caso se está guardando como Object, pero está bien
+        // porque automáticamente se transformará en String.
+        // Pero lo importante es que tenga un formato JSON, es decir, String con estructura JSON.
+        // Si que existe un setClaims para añadir los claims.
+        Claims claims = Jwts.claims();
+        claims.put("authorities", new ObjectMapper().writeValueAsString(roles));
+
         String token = Jwts.builder()
+                .setClaims(claims)
                 .setSubject(username)
                 .signWith(SECRET_KEY)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 14400000L))
                 .compact();
 
-        // Pasamos el token en la cabecera de la respuesta.
-        // Es obligatorio que el nombre del parámetro sea Authorization
-        // El valor del token, como standard, se inicia con el prefijo Bearer, seguido de espacio y el token
-        // Cuando el cliente envíe el token, también tendrá que poner el prefijo "Bearer "
         response.addHeader("Authorization", "Bearer " + token);
 
-        // Pero también es recomendable pasar el token y cualquier otro atributo que queramos pasar al usuario en
-        // una estructura JSON
         Map<String, Object> body = new HashMap<>();
         body.put("token", token);
         body.put("user", (User) authResult.getPrincipal());
         body.put("mensaje", String.format("Hola %s, has iniciado sesión con éxito!", username));
 
-        // Para pasar estos datos a la respuesta obtenemos el writer de la respuesta y escribir, pero
-        // transformando un objeto Map a uno JSON
-        // Para eso se usa ObjectMapper, que permite transformar cualquier objeto Java en un JSON
         response.getWriter().write(new ObjectMapper().writeValueAsString(body));
 
-        // Indicamos el status de la petición como OK
         response.setStatus(200);
 
-        // Indicamos el content-type, indicando que retornamos un JSON
         response.setContentType("application/json");
     }
 }
