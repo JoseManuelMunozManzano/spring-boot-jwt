@@ -4,12 +4,13 @@ import io.jsonwebtoken.Claims;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.io.IOException;
 import java.util.Collection;
 
 // Se crea esta interfase para desacoplar el código que tiene que ver con JWT y que sea reutilizable
 public interface JWTService {
 
-    String create(Authentication auth);
+    String create(Authentication auth) throws IOException;
 
     boolean validate(String token);
 
@@ -17,7 +18,7 @@ public interface JWTService {
 
     String getUsername(String token);
 
-    Collection<? extends GrantedAuthority> getRoles(String token);
+    Collection<? extends GrantedAuthority> getRoles(String token) throws IOException;
 
     String resolve(String token);
 }
