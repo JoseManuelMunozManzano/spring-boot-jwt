@@ -5,7 +5,6 @@ import com.jmunoz.springboot.app.models.entity.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+// PRIMERA PARTE: SE EJECUTA CUANDO QUEREMOS INICIAR SESION
 // Por defecto, este filtro solo se va a ejecutar cuando nuestra ruta sea login del tipo POST.
 // Pero lo hemos cambiado para que nuestra ruta sea /api/login
 
