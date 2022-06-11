@@ -2,10 +2,12 @@ package com.jmunoz.springboot.app;
 
 import com.jmunoz.springboot.app.auth.filter.JWTAuthenticationFilter;
 import com.jmunoz.springboot.app.auth.filter.JWTAuthorizationFilter;
+import com.jmunoz.springboot.app.auth.handler.CustomAuthenticationEntryPoint;
 import com.jmunoz.springboot.app.auth.handler.LoginSuccessHandler;
 import com.jmunoz.springboot.app.auth.service.JWTService;
 import com.jmunoz.springboot.app.models.service.JpaUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -13,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 
 // Adaptando la configuración de la seguridad para trabajar con jwt
 // Dejamos de usar sesiones y utilizaremos la forma stateless (sin estado)
@@ -51,6 +54,8 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers("/", "/css/**", "/js/**", "/images/**", "/listar/**", "/locale").permitAll()
                 .anyRequest().authenticated()
                 .and()
+                .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint())
+                .and()
                 // Registramos el filtro de autenticación y tenemos que pasarle el AuthenticationManager y nuestro
                 // JWTService.
                 // Como SpringSecurityConfig está heredando de WebSecurityConfigurerAdapter, si revisamos la clase
@@ -62,5 +67,10 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
+    }
+
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return new CustomAuthenticationEntryPoint();
     }
 }
