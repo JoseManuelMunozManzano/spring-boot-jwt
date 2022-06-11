@@ -1,6 +1,7 @@
 package com.jmunoz.springboot.app.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jmunoz.springboot.app.auth.SimpleGrantedAuthoritiesMixin;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -101,8 +102,13 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
             //
             // 2. Otra forma sería crear nuestra propia implementación de GrantedAuthority y utilizarla en vez de
             // SimpleGrantedAuthority
+            //
+            // Se implementa la solución 1 (ver clase SimpleGrantedAuthorityMixin)
+            // y se añade a ObjectMapper el método addMixin() y en ella se indica la clase target, que es la clase
+            // objetivo a la cual queremos convertir, y nuestra clase mixin
             Collection<? extends GrantedAuthority> authorities = Arrays.asList(
-                    new ObjectMapper().readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+                    new ObjectMapper().addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthoritiesMixin.class).
+                            readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
 
             authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
         }
