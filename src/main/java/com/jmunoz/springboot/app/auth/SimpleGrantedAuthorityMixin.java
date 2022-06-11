@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 // Se desarrolla la solución 1, consistente en crear una clase Mixin abstracta
 // que implementa un constructor vacío
-public abstract class SimpleGrantedAuthoritiesMixin {
+public abstract class SimpleGrantedAuthorityMixin {
 
     // Con esta anotación indicamos que este es el constructor por defecto cuando se crean objetos authorities
     // a partir de JSON
@@ -13,5 +13,5 @@ public abstract class SimpleGrantedAuthoritiesMixin {
     // El property es "authority" porque cuando se hace el login, en el token van los roles asociados a la propiedad
     // authority
     @JsonCreator
-    public SimpleGrantedAuthoritiesMixin(@JsonProperty("authority") String role) {}
+    public SimpleGrantedAuthorityMixin(@JsonProperty("authority") String role) {}
 }
