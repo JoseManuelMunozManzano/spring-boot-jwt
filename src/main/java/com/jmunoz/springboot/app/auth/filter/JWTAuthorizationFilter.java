@@ -1,6 +1,26 @@
 package com.jmunoz.springboot.app.auth.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 // SEGUNDA PARTE: SE EJECUTA CUANDO QUEREMOS ACCEDER A UN RECURSO
 // Una vez que estamos autenticados, ya se puede enviar el token para acceder a los recursos protegidos.
@@ -27,21 +47,6 @@ package com.jmunoz.springboot.app.auth.filter;
 //    "username": "jmunoz",
 //    "password": 1234
 // }
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
@@ -73,6 +78,42 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         }  catch (JwtException | IllegalArgumentException e) {
             validoToken = false;
         }
+
+        // Cada vez que queramos acceder a un recurso nos autenticamos con el token de cuando hicmos el login
+        UsernamePasswordAuthenticationToken authentication = null;
+        if (validoToken) {
+            String username = token.getSubject();
+            // En la clase JWTAuthenticationFilter guardamos, en el método successfulAuthentication,
+            // en los claims con la key "authorities"
+            Object roles = token.get("authorities");
+
+            // Los roles son un JSON que hay que convertir en una colección de authorities
+            // ERROR COMUN:
+            // Cannot construct instance of `org.springframework.security.core.authority.SimpleGrantedAuthority`
+            // (although at least one Creator exists): cannot deserialize from Object
+            // value (no delegate- or property-based Creator)
+            // Esto ocurre porque SimpleGrantedAuthority recibe un parámetro (el role)
+            // No hay constructor vacío.
+            //
+            // SOLUCION
+            // 1. Una de las cosas que nos permite ObjectMapper es crear otra clase y combinarla (clase Mixin),
+            // en este caso, con SimpleGrantedAuthority.
+            //
+            // 2. Otra forma sería crear nuestra propia implementación de GrantedAuthority y utilizarla en vez de
+            // SimpleGrantedAuthority
+            Collection<? extends GrantedAuthority> authorities = Arrays.asList(
+                    new ObjectMapper().readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+
+            authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
+        }
+
+        // Manejando el contexto de seguridad. Asignamos el objeto authentication dentro del contexto.
+        // Es para autenticar al usuario dentro del request.
+        // No estamos utilizando sesiones, así que la autenticación es por solicitud.
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Continuamos con los siguientes filtros (Sería como el next() en NodeJs)
+        chain.doFilter(request, response);
     }
 
     protected boolean requiresAuthentication(String header) {
