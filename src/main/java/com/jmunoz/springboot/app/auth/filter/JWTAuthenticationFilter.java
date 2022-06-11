@@ -2,6 +2,7 @@ package com.jmunoz.springboot.app.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jmunoz.springboot.app.auth.service.JWTService;
+import com.jmunoz.springboot.app.auth.service.JWTServiceImpl;
 import com.jmunoz.springboot.app.models.entity.Usuario;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -72,7 +73,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         // Usando nuestro service
         String token = jwtService.create(authResult);
 
-        response.addHeader("Authorization", "Bearer " + token);
+        response.addHeader(JWTServiceImpl.TOKEN_PREFIX, JWTServiceImpl.TOKEN_PREFIX + token);
 
         Map<String, Object> body = new HashMap<>();
         body.put("token", token);

@@ -11,6 +11,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Base64Utils;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -26,7 +27,12 @@ import java.util.Date;
 public class JWTServiceImpl implements JWTService {
 
     public static final SecretKey SECRET_KEY = new SecretKeySpec("algunaLlaveSecretaTienequeser256bitslong".getBytes(), SignatureAlgorithm.HS512.getJcaName());
+    // Otra forma en base64
+    // public static final String SECRET = Base64Utils.encodeToString("algunaLlaveSecretaTienequeser256bitslong".getBytes());
 
+    public static final long EXPIRATION_DATE = 14400000L;
+    public static final String TOKEN_PREFIX = "Bearer ";
+    public static final String HEADER_STRING = "Authorization";
 
     @Override
     public String create(Authentication auth) throws IOException {
@@ -42,7 +48,7 @@ public class JWTServiceImpl implements JWTService {
                 .setSubject(username)
                 .signWith(SECRET_KEY)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 14400000L))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_DATE))
                 .compact();
 
         return token;
@@ -82,8 +88,8 @@ public class JWTServiceImpl implements JWTService {
 
     @Override
     public String resolve(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            return token.replace("Bearer ", "");
+        if (token != null && token.startsWith(TOKEN_PREFIX)) {
+            return token.replace(TOKEN_PREFIX, "");
         }
 
         return null;
